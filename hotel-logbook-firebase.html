@@ -675,18 +675,33 @@ body {
   text-align: center;
   cursor: pointer;
   transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 128px;
 }
 .dur-card:hover { border-color: var(--blue); }
 .dur-card.selected { border-color: var(--blue); background: var(--blue-light); }
 .dur-card-icon { font-size: 18px; margin-bottom: 4px; }
 .dur-card-name { font-size: 13px; font-weight: 600; color: var(--gray-800); }
-.dur-card-sub { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+.dur-card-sub {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 4px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1 1 auto;
+}
 .dur-card.selected .dur-card-name { color: var(--blue-dark); }
 .dur-card-price {
   font-size: 13px;
   font-weight: 700;
   color: var(--green);
-  margin-top: 4px;
+  margin-top: 8px;
   font-family: var(--mono);
 }
 .dur-card.selected .dur-card-price { color: var(--blue-dark); }
@@ -1863,13 +1878,13 @@ tbody tr:hover td { background: var(--gray-50); }
             <div class="dur-card" onclick="selectDur(this,'12hours')" id="dur-12hours">
               <div class="dur-card-icon">🌓</div>
               <div class="dur-card-name">12 Hours</div>
-              <div class="dur-card-sub">Half day · Night stay after 9pm checks out 8am</div>
+              <div class="dur-card-sub">Half day · Night check-in (after 9pm) → 8am checkout</div>
               <div class="dur-card-price">₹800</div>
             </div>
             <div class="dur-card" onclick="selectDur(this,'fullday')" id="dur-fullday">
               <div class="dur-card-icon">☀️</div>
               <div class="dur-card-name">Full Day</div>
-              <div class="dur-card-sub">24 hours · After 12pm checks out 10am (2 days later)</div>
+              <div class="dur-card-sub">24 hrs · After 12pm → 10am checkout (+2 days)</div>
               <div class="dur-card-price">₹1,200</div>
             </div>
           </div>
