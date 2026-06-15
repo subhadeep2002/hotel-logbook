@@ -1741,8 +1741,6 @@ tbody tr:hover td { background: var(--gray-50); }
     </div>
   </div>
   <div class="topbar-nav" id="topbar-nav">
-    <button class="topbar-btn ghost" onclick="showPage('checkin')">Customer Check-in</button>
-    <button class="topbar-btn primary" onclick="showPage('admin-login')">Admin Panel</button>
   </div>
 </div>
 
@@ -1865,13 +1863,13 @@ tbody tr:hover td { background: var(--gray-50); }
             <div class="dur-card" onclick="selectDur(this,'12hours')" id="dur-12hours">
               <div class="dur-card-icon">🌓</div>
               <div class="dur-card-name">12 Hours</div>
-              <div class="dur-card-sub">Half day</div>
+              <div class="dur-card-sub">Half day · Night stay after 9pm checks out 8am</div>
               <div class="dur-card-price">₹800</div>
             </div>
             <div class="dur-card" onclick="selectDur(this,'fullday')" id="dur-fullday">
               <div class="dur-card-icon">☀️</div>
               <div class="dur-card-name">Full Day</div>
-              <div class="dur-card-sub">24 hours</div>
+              <div class="dur-card-sub">24 hours · After 12pm checks out 10am (2 days later)</div>
               <div class="dur-card-price">₹1,200</div>
             </div>
           </div>
@@ -2540,6 +2538,44 @@ function getDurSeconds(durType, hours) {
   return 3600;
 }
 
+// ===== CHECK-OUT TIME RULES (12-hour & full-day stays) =====
+// 12 Hours (Half Day):
+//   - Check-in after 9:00 PM  -> Check-out next day at 8:00 AM
+//   - Check-in before 9:00 PM -> Check-out same day, 12 hours later
+// Full Day (24 hrs):
+//   - Check-in after 12:00 PM (noon) -> Check-out the DAY AFTER NEXT at 10:00 AM
+//   - Check-in before 12:00 PM       -> Check-out NEXT day at 10:00 AM
+function getCheckoutTime(durType, startMs) {
+  const start = new Date(startMs);
+
+  if (durType === '12hours') {
+    const hour = start.getHours();
+    const checkout = new Date(start);
+    if (hour >= 21) {
+      checkout.setDate(checkout.getDate() + 1);
+      checkout.setHours(8, 0, 0, 0);
+    } else {
+      checkout.setTime(start.getTime() + 12 * 3600 * 1000);
+    }
+    return checkout.getTime();
+  }
+
+  if (durType === 'fullday') {
+    const hour = start.getHours();
+    const checkout = new Date(start);
+    if (hour >= 12) {
+      checkout.setDate(checkout.getDate() + 2);
+      checkout.setHours(10, 0, 0, 0);
+    } else {
+      checkout.setDate(checkout.getDate() + 1);
+      checkout.setHours(10, 0, 0, 0);
+    }
+    return checkout.getTime();
+  }
+
+  return startMs + getDurSeconds(durType, null) * 1000;
+}
+
 function getDurLabel(durType, hours) {
   if (durType === 'hourly') {
     const h = hours || cSelectedHours;
@@ -2604,10 +2640,25 @@ function showPage(p) {
     nav.innerHTML=`<span style="font-size:13px;font-weight:500;color:var(--gray-600);margin-right:8px;">Welcome, Admin</span><button class="topbar-btn ghost" onclick="showPage('checkin')">Customer View</button><button class="topbar-btn primary" onclick="doLogout()">Sign Out</button>`;
     renderAdmin();
   } else {
+    // Customer-facing view: no admin entry point shown
     topbar.style.display='flex';
-    nav.innerHTML=`<button class="topbar-btn ghost" onclick="showPage('checkin')">Customer Check-in</button><button class="topbar-btn primary" onclick="showPage('admin-login')">Admin Panel</button>`;
+    nav.innerHTML='';
+    // Ensure the admin route doesn't linger in the URL for customers
+    if (window.location.hash === '#admin' || window.location.hash === '#admin-login') {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
   }
 }
+
+// ===== HIDDEN ADMIN ROUTE =====
+// Admin login is ONLY reachable via the URL hash: yoursite.html#admin
+// This keeps the Admin Panel button completely hidden from customers.
+function checkAdminRoute() {
+  if (window.location.hash === '#admin') {
+    showPage('admin-login');
+  }
+}
+window.addEventListener('hashchange', checkAdminRoute);
 
 // ===== CUSTOMER FLOW =====
 function cGoStep(n) {
@@ -2780,8 +2831,9 @@ function completeCheckIn(name, phone, useFreeStay) {
   const room = ROOMS_DEF.find(r=>r.id===cSelectedRoom);
   const now = Date.now();
   const hours = cSelectedDur === 'hourly' ? cSelectedHours : null;
-  const secs = getDurSeconds(cSelectedDur, hours);
-  const endTime = now + secs * 1000;
+  const endTime = (cSelectedDur === '12hours' || cSelectedDur === 'fullday')
+    ? getCheckoutTime(cSelectedDur, now)
+    : now + getDurSeconds(cSelectedDur, hours) * 1000;
   const profile = getGuestProfile(phone);
 
   let amountPaid, loyaltyApplied = false;
@@ -2894,7 +2946,10 @@ function doLogin() {
   }
 }
 
-function doLogout() { showPage('checkin'); }
+function doLogout() {
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+  showPage('checkin');
+}
 
 // ===== ADMIN VIEWS =====
 function showAdminView(v) {
@@ -3603,7 +3658,11 @@ function showToast(msg, type) {
 }
 
 // Initialize
-showPage('checkin');
+if (window.location.hash === '#admin') {
+  showPage('admin-login');
+} else {
+  showPage('checkin');
+}
 renderHourChips();
 
 // =====================================================================
