@@ -599,6 +599,39 @@ body {
   box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
 }
 .field input::placeholder { color: var(--gray-400); }
+.field textarea {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-family: var(--font);
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  background: var(--white);
+  color: var(--gray-900);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+  resize: vertical;
+}
+.field textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+}
+.field textarea::placeholder { color: var(--gray-400); }
+.field select {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 15px;
+  font-family: var(--font);
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  background: var(--white);
+  color: var(--gray-900);
+  outline: none;
+}
+.field select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+}
 .field-hint {
   font-size: 12px;
   color: var(--gray-400);
@@ -664,7 +697,7 @@ body {
 /* Duration */
 .dur-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-bottom: 20px;
 }
@@ -1346,6 +1379,60 @@ tbody tr:hover td { background: var(--gray-50); }
 .modal-actions { display: flex; gap: 10px; }
 .modal-actions .btn { flex: 1; padding: 11px; font-size: 14px; }
 
+/* Larger modal variant (Guest Profile / New Booking forms) */
+.modal-lg { max-width: 480px; max-height: 88vh; overflow-y: auto; }
+
+/* New booking — duration choice grid (same look as .extend-opt, kept separate to avoid clashing with the Extend modal's own selection state) */
+.nb-dur-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.nb-dur-opt {
+  padding: 14px 8px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+.nb-dur-opt:hover { border-color: var(--blue); background: var(--blue-light); color: var(--blue-dark); }
+.nb-dur-opt.sel { border-color: var(--blue); background: var(--blue-light); color: var(--blue-dark); }
+
+/* Guest profile document upload */
+.doc-upload-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--gray-600);
+}
+.doc-upload-current a { color: var(--blue); font-weight: 500; text-decoration: none; }
+.doc-upload-current a:hover { text-decoration: underline; }
+.doc-remove-btn {
+  background: none; border: none; color: var(--red); font-size: 12px;
+  font-weight: 600; cursor: pointer; padding: 0;
+}
+
+/* Guest Profiles table extras */
+.profile-search-bar {
+  display: flex; gap: 8px; align-items: center;
+}
+.profile-search-bar input {
+  padding: 7px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px;
+  font-family: var(--font); font-size: 13px; color: var(--gray-800); outline: none; width: 220px;
+}
+.doc-badge {
+  font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px;
+}
+.doc-badge.has { background: var(--green-light); color: var(--green); }
+.doc-badge.none { background: var(--gray-100); color: var(--gray-400); }
+
 /* Checkout confirm modal */
 .co-modal-info {
   background: var(--gray-50);
@@ -1870,13 +1957,19 @@ tbody tr:hover td { background: var(--gray-50); }
               <div class="dur-card-icon">🌓</div>
               <div class="dur-card-name">12 Hours</div>
               <div class="dur-card-sub">Half day · Night check-in (after 9pm) → 8am checkout</div>
-              <div class="dur-card-price">₹800</div>
+              <div class="dur-card-price" id="dur-12hours-price">₹800</div>
             </div>
             <div class="dur-card" onclick="selectDur(this,'fullday')" id="dur-fullday">
               <div class="dur-card-icon">☀️</div>
               <div class="dur-card-name">Full Day</div>
               <div class="dur-card-sub">24 hrs · After 12pm → 10am checkout (+2 days)</div>
-              <div class="dur-card-price">₹1,200</div>
+              <div class="dur-card-price" id="dur-fullday-price">₹1,200</div>
+            </div>
+            <div class="dur-card" onclick="selectDur(this,'night')" id="dur-night">
+              <div class="dur-card-icon">🌙</div>
+              <div class="dur-card-name">Night Stay</div>
+              <div class="dur-card-sub">Check-in anytime · Check-out next day 8:00 AM</div>
+              <div class="dur-card-price" id="dur-night-price">₹1,000</div>
             </div>
           </div>
 
@@ -1981,6 +2074,10 @@ tbody tr:hover td { background: var(--gray-50); }
         <span id="active-badge" style="margin-left:auto;background:var(--blue);color:white;font-size:11px;font-weight:600;padding:1px 7px;border-radius:10px;">0</span>
       </button>
       <div class="sidebar-section">Records</div>
+      <button class="sidebar-link" id="sl-profiles" onclick="showAdminView('profiles')">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Guest Profiles
+      </button>
       <button class="sidebar-link" id="sl-logs" onclick="showAdminView('logs')">
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Daily Log
@@ -2086,6 +2183,7 @@ tbody tr:hover td { background: var(--gray-50); }
             <div class="page-title">Active Bookings</div>
             <div class="page-sub">Manage ongoing check-ins</div>
           </div>
+          <button class="btn-sm btn-sm-blue" onclick="openNewBookingModal()">+ New Booking</button>
         </div>
         <div class="table-wrap">
           <div class="table-header">
@@ -2094,6 +2192,29 @@ tbody tr:hover td { background: var(--gray-50); }
           <table>
             <thead><tr><th>Guest</th><th>Mobile</th><th>Room</th><th>Duration</th><th>Amount</th><th>Check-in</th><th>Check-out</th><th>Time left</th><th style="color:#dc2626;">OT Charge</th><th>Actions</th></tr></thead>
             <tbody id="bookings-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- GUEST PROFILES -->
+      <div class="admin-view" id="av-profiles">
+        <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div class="page-title">Guest Profiles</div>
+            <div class="page-sub">Manage saved guest details, address & ID documents</div>
+          </div>
+          <button class="btn-sm btn-sm-blue" onclick="openProfileModal()">+ Add Guest Profile</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header">
+            <span class="table-title" id="profiles-count">Guest profiles</span>
+            <div class="profile-search-bar">
+              <input type="text" id="gp-search" placeholder="Search name / mobile / address…" oninput="renderGuestProfiles()">
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Guest</th><th>Mobile</th><th>Address</th><th>Document</th><th>Stamps</th><th>Visits</th><th>Actions</th></tr></thead>
+            <tbody id="profiles-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -2179,7 +2300,7 @@ tbody tr:hover td { background: var(--gray-50); }
           You have unsaved changes — click <strong style="margin:0 4px;">Save changes</strong> to apply.
         </div>
 
-        <div class="pricing-section-label">Hourly rates (1 – 6 hrs) — set each slot independently</div>
+        <div class="pricing-section-label">Hourly rates (1 – 9 hrs) — set each slot independently</div>
         <div class="pricing-edit-grid" id="pe-hourly-grid"></div>
 
         <div class="pricing-section-label" style="margin-top:28px;">Fixed duration rates</div>
@@ -2200,6 +2321,15 @@ tbody tr:hover td { background: var(--gray-50); }
             <div class="pricing-edit-field">
               <span class="pricing-edit-prefix">₹</span>
               <input type="number" id="pe-fullday" min="1" step="50" class="pricing-input" oninput="markUnsaved()">
+            </div>
+          </div>
+          <div class="pricing-edit-card">
+            <div class="pricing-edit-icon">🌙</div>
+            <div class="pricing-edit-label">Night Stay (flat rate)</div>
+            <div class="pricing-edit-sub">Check-in anytime, check-out 8:00 AM next day</div>
+            <div class="pricing-edit-field">
+              <span class="pricing-edit-prefix">₹</span>
+              <input type="number" id="pe-night" min="1" step="50" class="pricing-input" oninput="markUnsaved()">
             </div>
           </div>
         </div>
@@ -2287,6 +2417,101 @@ tbody tr:hover td { background: var(--gray-50); }
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('checkout-modal')">Cancel</button>
       <button class="btn" style="background:var(--red);color:white;flex:1;padding:11px;font-size:14px;" onclick="doCheckout()">Check out</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Booking Modal (Admin manual check-in) -->
+<div class="modal-overlay" id="new-booking-modal">
+  <div class="modal modal-lg">
+    <div class="modal-title">+ New Booking</div>
+    <div class="modal-sub">Create a booking manually for walk-in guests</div>
+
+    <div class="field">
+      <label>Mobile Number *</label>
+      <input type="tel" id="nb-phone" placeholder="10-digit mobile number" maxlength="10" oninput="nbPhoneInput()">
+      <div class="field-error" id="nb-err-phone">Please enter a valid 10-digit number</div>
+    </div>
+    <div id="nb-guest-banner"></div>
+    <div class="field">
+      <label>Guest Name *</label>
+      <input type="text" id="nb-name" placeholder="e.g. Rahul Sharma">
+      <div class="field-error" id="nb-err-name">Please enter the guest's name</div>
+    </div>
+    <div class="field">
+      <label>Select Room *</label>
+      <select id="nb-room"></select>
+      <div class="field-error" id="nb-err-room">No rooms available right now</div>
+    </div>
+    <div class="field">
+      <label>Duration *</label>
+      <div class="nb-dur-grid" id="nb-dur-opts">
+        <div class="nb-dur-opt sel" onclick="selectNbDur(this,'hourly')">⏱ Hourly</div>
+        <div class="nb-dur-opt" onclick="selectNbDur(this,'12hours')">🌓 12 Hours</div>
+        <div class="nb-dur-opt" onclick="selectNbDur(this,'fullday')">☀️ Full Day</div>
+        <div class="nb-dur-opt" onclick="selectNbDur(this,'night')">🌙 Night Stay</div>
+      </div>
+      <div class="field" id="nb-hours-wrap" style="margin-bottom:0;">
+        <label>Number of hours</label>
+        <select id="nb-hours" onchange="updateNbPricePreview()">
+          <option value="1">1 hour</option>
+          <option value="2">2 hours</option>
+          <option value="3">3 hours</option>
+          <option value="4">4 hours</option>
+          <option value="5">5 hours</option>
+          <option value="6">6 hours</option>
+          <option value="7">7 hours</option>
+          <option value="8">8 hours</option>
+          <option value="9">9 hours</option>
+        </select>
+      </div>
+    </div>
+    <div id="nb-freestay-wrap" style="display:none;margin-bottom:14px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--gray-700);cursor:pointer;">
+        <input type="checkbox" id="nb-freestay" onchange="updateNbPricePreview()" style="width:16px;height:16px;">
+        🎉 Apply free stay reward (₹0 for this booking)
+      </label>
+    </div>
+    <div class="co-modal-info" id="nb-price-preview" style="margin-bottom:16px;"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('new-booking-modal')">Cancel</button>
+      <button class="btn btn-blue" onclick="submitNewBooking()">Create Booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- Guest Profile Modal (Admin: add / edit guest profile) -->
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal modal-lg">
+    <div class="modal-title" id="pm-title">Add Guest Profile</div>
+    <div class="modal-sub">Fields marked * are required</div>
+
+    <div class="field">
+      <label>Full Name *</label>
+      <input type="text" id="pm-name" placeholder="e.g. Rahul Sharma">
+      <div class="field-error" id="pm-err-name">Please enter the guest's full name</div>
+    </div>
+    <div class="field">
+      <label>Mobile Number *</label>
+      <input type="tel" id="pm-phone" placeholder="10-digit mobile number" maxlength="10">
+      <div class="field-hint" id="pm-phone-hint">Acts as the unique guest identifier — cannot be changed once saved</div>
+      <div class="field-error" id="pm-err-phone">Please enter a valid 10-digit number</div>
+    </div>
+    <div class="field">
+      <label>Address (optional)</label>
+      <textarea id="pm-address" rows="3" placeholder="Guest address"></textarea>
+    </div>
+    <div class="field" style="margin-bottom:8px;">
+      <label>ID / Document Upload (optional)</label>
+      <input type="file" id="pm-document" onchange="handleProfileDocUpload(event)">
+      <div class="field-hint">PDF or image, under 450KB. Larger files are saved by name only.</div>
+      <div id="pm-doc-current"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('profile-modal')">Cancel</button>
+      <button class="btn btn-blue" onclick="saveGuestProfile()">Save Profile</button>
     </div>
   </div>
 </div>
@@ -2481,6 +2706,7 @@ const DEFAULT_PRICING = {
   hourlyRates: [500, 600, 700, 800, 900, 1000, 1100, 1200, 1300], // 1h–9h, ₹100 increment
   '12hours': 800,
   fullday: 1200,
+  night: 1000,
 };
 const DEFAULT_LOYALTY_THRESHOLD = 7;
 const DEFAULT_LOYALTY_DISCOUNT_PCT = 0.10;
@@ -2489,6 +2715,7 @@ let PRICING = {
   hourlyRates: [...DEFAULT_PRICING.hourlyRates],
   '12hours': DEFAULT_PRICING['12hours'],
   fullday: DEFAULT_PRICING.fullday,
+  night: DEFAULT_PRICING.night,
 };
 let LOYALTY_THRESHOLD = DEFAULT_LOYALTY_THRESHOLD;
 let LOYALTY_DISCOUNT_PCT = DEFAULT_LOYALTY_DISCOUNT_PCT;
@@ -2537,20 +2764,37 @@ let checkoutBookingId = null;
 let currentGuestPhone = null;
 let pendingCheckInData = null; // used for free-stay modal
 
+// Admin: New Booking modal state
+let nbSelectedDur = 'hourly';
+let nbSelectedHours = 1;
+
+// Admin: Guest Profile modal state
+let pmEditingPhone = null;     // null = adding a new profile, otherwise editing this phone
+let pmPendingDoc = null;       // {dataUrl, name} or {name} (too large) staged before save
+let pmDocRemoved = false;      // true if user removed the existing document during edit
+
+// Limit for storing a document as an inline data URL. Base64 inflates raw
+// bytes by ~33%, and Firestore caps a document at 1MB total — so we cap the
+// raw file well below that to leave headroom for the rest of the profile.
+const DOC_DATA_URL_MAX_BYTES = 450 * 1024;
+
 function getDurSeconds(durType, hours) {
   if (durType === 'hourly') return (hours || cSelectedHours) * 3600;
   if (durType === '12hours') return 43200;
   if (durType === 'fullday') return 86400;
+  if (durType === 'night') return 0; // computed via getCheckoutTime instead — duration varies with check-in time
   return 3600;
 }
 
-// ===== CHECK-OUT TIME RULES (12-hour & full-day stays) =====
+// ===== CHECK-OUT TIME RULES (12-hour, full-day & night stays) =====
 // 12 Hours (Half Day):
 //   - Check-in after 9:00 PM  -> Check-out next day at 8:00 AM
 //   - Check-in before 9:00 PM -> Check-out same day, 12 hours later
 // Full Day (24 hrs):
 //   - Check-in after 12:00 PM (noon) -> Check-out the DAY AFTER NEXT at 10:00 AM
 //   - Check-in before 12:00 PM       -> Check-out NEXT day at 10:00 AM
+// Night Stay:
+//   - Check-in at any time -> Check-out NEXT day at 8:00 AM (flat night rate)
 function getCheckoutTime(durType, startMs) {
   const start = new Date(startMs);
 
@@ -2579,6 +2823,13 @@ function getCheckoutTime(durType, startMs) {
     return checkout.getTime();
   }
 
+  if (durType === 'night') {
+    const checkout = new Date(start);
+    checkout.setDate(checkout.getDate() + 1);
+    checkout.setHours(8, 0, 0, 0);
+    return checkout.getTime();
+  }
+
   return startMs + getDurSeconds(durType, null) * 1000;
 }
 
@@ -2589,12 +2840,13 @@ function getDurLabel(durType, hours) {
   }
   if (durType === '12hours') return '12 Hours (Half Day)';
   if (durType === 'fullday') return 'Full Day (24 hrs)';
+  if (durType === 'night') return 'Night Stay';
   return durType;
 }
 
-// Get price for a specific hourly slot (1-based)
+// Get price for a specific hourly slot (1-based). Supports the full 1–9 hour range.
 function getHourlyPrice(hours) {
-  const idx = Math.min(Math.max(hours, 1), 6) - 1;
+  const idx = Math.min(Math.max(hours, 1), 9) - 1;
   return PRICING.hourlyRates[idx] || PRICING.hourlyRates[0];
 }
 
@@ -2605,7 +2857,7 @@ function getBasePrice(durType, hours) {
 
 function getGuestProfile(phone) {
   if (!guestProfiles[phone]) {
-    guestProfiles[phone] = {name:'', checkins:0, discountsUsed:0, totalSavings:0, currentStamps:0, freeStayAvailable:false, lastStampDate:null, rewardsClaimed:0};
+    guestProfiles[phone] = {name:'', address:'', document:null, documentName:null, checkins:0, discountsUsed:0, totalSavings:0, currentStamps:0, freeStayAvailable:false, lastStampDate:null, rewardsClaimed:0};
   }
   // Ensure stamp fields exist on old profiles
   const p = guestProfiles[phone];
@@ -2613,6 +2865,10 @@ function getGuestProfile(phone) {
   if (p.freeStayAvailable === undefined) p.freeStayAvailable = false;
   if (p.lastStampDate === undefined) p.lastStampDate = null;
   if (p.rewardsClaimed === undefined) p.rewardsClaimed = 0;
+  // Ensure profile-management fields exist on old profiles
+  if (p.address === undefined) p.address = '';
+  if (p.document === undefined) p.document = null;
+  if (p.documentName === undefined) p.documentName = null;
   return p;
 }
 
@@ -2794,6 +3050,7 @@ function renderHourChips() {
     </div>`;
   }).join('');
   updateHourlyPreview();
+  refreshDurCardPrices();
 }
 
 function selectHours(h) {
@@ -2809,6 +3066,18 @@ function updateHourlyPreview() {
   document.getElementById('htp-hours').textContent = cSelectedHours + ' hour' + (cSelectedHours>1?'s':'');
   document.getElementById('htp-rate').textContent = fmtCurrency(ratePerHour);
   document.getElementById('htp-total').textContent = fmtCurrency(totalPrice);
+}
+
+// Keep the fixed-duration price tags (12 Hours / Full Day / Night Stay) in sync
+// with PRICING. These are static text in the markup, so anything that changes
+// PRICING must call this to make the change visible immediately.
+function refreshDurCardPrices() {
+  const el12 = document.getElementById('dur-12hours-price');
+  const elFull = document.getElementById('dur-fullday-price');
+  const elNight = document.getElementById('dur-night-price');
+  if (el12) el12.textContent = fmtCurrency(PRICING['12hours']);
+  if (elFull) elFull.textContent = fmtCurrency(PRICING.fullday);
+  if (elNight) elNight.textContent = fmtCurrency(PRICING.night);
 }
 
 function cStep2Next() {
@@ -2833,13 +3102,18 @@ function chooseFreeStay(useNow) {
   completeCheckIn(name, phone, useNow);
 }
 
-function completeCheckIn(name, phone, useFreeStay) {
-  const room = ROOMS_DEF.find(r=>r.id===cSelectedRoom);
+// ===== SHARED CHECK-IN LOGIC =====
+// Creates a booking + updates the guest profile (stamps / free-stay / pricing).
+// Used by both the customer-facing flow (completeCheckIn) and the admin
+// "+ New Booking" form (submitNewBooking), so behaviour stays identical
+// no matter who performs the check-in.
+function processCheckIn(roomId, name, phone, durType, hours, useFreeStay) {
+  const room = ROOMS_DEF.find(r => r.id === roomId);
   const now = Date.now();
-  const hours = cSelectedDur === 'hourly' ? cSelectedHours : null;
-  const endTime = (cSelectedDur === '12hours' || cSelectedDur === 'fullday')
-    ? getCheckoutTime(cSelectedDur, now)
-    : now + getDurSeconds(cSelectedDur, hours) * 1000;
+  const isFixedTime = (durType === '12hours' || durType === 'fullday' || durType === 'night');
+  const endTime = isFixedTime
+    ? getCheckoutTime(durType, now)
+    : now + getDurSeconds(durType, hours) * 1000;
   const profile = getGuestProfile(phone);
 
   let amountPaid, loyaltyApplied = false;
@@ -2848,12 +3122,12 @@ function completeCheckIn(name, phone, useFreeStay) {
     loyaltyApplied = true;
     profile.freeStayAvailable = false;
     profile.discountsUsed += 1;
-    const basePrice = getBasePrice(cSelectedDur, hours);
+    const basePrice = getBasePrice(durType, hours);
     profile.totalSavings += basePrice;
     profile.rewardsClaimed = (profile.rewardsClaimed || 0) + 1;
     // Do NOT add a stamp when using free stay
   } else {
-    const pricing = calculatePrice(cSelectedDur, phone, hours);
+    const pricing = calculatePrice(durType, phone, hours);
     amountPaid = pricing.total;
     // Add a stamp
     profile.currentStamps = (profile.currentStamps || 0) + 1;
@@ -2870,10 +3144,10 @@ function completeCheckIn(name, phone, useFreeStay) {
 
   const booking = {
     id: nextId++,
-    roomId: cSelectedRoom,
+    roomId,
     name, phone,
-    durType: cSelectedDur,
-    hours: hours,
+    durType,
+    hours: durType === 'hourly' ? hours : null,
     start: now,
     end: endTime,
     status: 'Active',
@@ -2881,6 +3155,16 @@ function completeCheckIn(name, phone, useFreeStay) {
     loyaltyApplied,
   };
   bookings.push(booking);
+
+  return { booking, profile, room };
+}
+
+function completeCheckIn(name, phone, useFreeStay) {
+  const hours = cSelectedDur === 'hourly' ? cSelectedHours : null;
+  const { booking, profile, room } = processCheckIn(cSelectedRoom, name, phone, cSelectedDur, hours, useFreeStay);
+  const now = booking.start;
+  const endTime = booking.end;
+  const amountPaid = booking.amountPaid;
 
   const durLabelStr = getDurLabel(cSelectedDur, hours);
   const basePrice = getBasePrice(cSelectedDur, hours);
@@ -2965,6 +3249,7 @@ function showAdminView(v) {
   document.getElementById('sl-'+v).classList.add('active');
   if(v==='dashboard') renderDashboard();
   if(v==='bookings') renderBookings();
+  if(v==='profiles') renderGuestProfiles();
   if(v==='logs') renderLogs();
   if(v==='rooms') renderRoomMgmt();
   if(v==='loyalty') renderLoyaltyAdmin();
@@ -3502,9 +3787,191 @@ function renderLoyaltyAdmin() {
   }).join('');
 }
 
+// ===== GUEST PROFILE MANAGEMENT (Admin) =====
+function renderGuestProfiles() {
+  const searchRaw = (document.getElementById('gp-search')?.value || '').trim().toLowerCase();
+
+  let profiles = Object.keys(guestProfiles).map(phone => ({ phone, ...getGuestProfile(phone) }));
+
+  if (searchRaw) {
+    profiles = profiles.filter(p =>
+      (p.name || '').toLowerCase().includes(searchRaw) ||
+      p.phone.includes(searchRaw) ||
+      (p.address || '').toLowerCase().includes(searchRaw)
+    );
+  }
+
+  profiles.sort((a, b) => (b.checkins || 0) - (a.checkins || 0));
+
+  document.getElementById('profiles-count').textContent =
+    profiles.length + ' guest profile' + (profiles.length !== 1 ? 's' : '');
+
+  if (profiles.length === 0) {
+    document.getElementById('profiles-tbody').innerHTML =
+      `<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:32px;">
+        No guest profiles found${searchRaw ? '<br><span style="font-size:12px;">Try clearing the search</span>' : ''}
+      </td></tr>`;
+    return;
+  }
+
+  document.getElementById('profiles-tbody').innerHTML = profiles.map(p => {
+    const addressSnippet = p.address
+      ? (p.address.length > 40 ? esc(p.address.slice(0, 40)) + '…' : esc(p.address))
+      : '<span style="color:var(--gray-400);">—</span>';
+    const hasDoc = !!(p.document || p.documentName);
+    const docBadge = hasDoc
+      ? `<span class="doc-badge has">📄 ${esc(p.documentName || 'Uploaded')}</span>`
+      : `<span class="doc-badge none">None</span>`;
+    const stamps = p.currentStamps || 0;
+    const stampCell = p.freeStayAvailable
+      ? `<span class="stamp-ready-badge">🎉 Free Stay</span>`
+      : `${stamps}/7`;
+
+    return `<tr>
+      <td><div class="td-name">${p.name ? esc(p.name) : '<span style="color:var(--gray-400);">Unnamed</span>'}</div></td>
+      <td class="td-mono">${p.phone}</td>
+      <td style="font-size:12px;max-width:220px;">${addressSnippet}</td>
+      <td>${docBadge}</td>
+      <td>${stampCell}</td>
+      <td style="font-size:13px;color:var(--gray-500);">${p.checkins || 0}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-sm btn-sm-blue" onclick="openProfileModal('${p.phone}')">Edit</button>
+          <button class="btn-sm btn-sm-gray" onclick="adminViewStampCard('${p.phone}')">Stamp Card</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// Small HTML-escape helper so guest-entered text (name/address/filename)
+// can't break table markup if it contains < > & etc.
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function openProfileModal(phone) {
+  pmEditingPhone = phone || null;
+  pmPendingDoc = null;
+  pmDocRemoved = false;
+  document.getElementById('pm-document').value = '';
+  document.getElementById('pm-err-name').style.display = 'none';
+  document.getElementById('pm-err-phone').style.display = 'none';
+
+  if (phone) {
+    const p = getGuestProfile(phone);
+    document.getElementById('pm-title').textContent = 'Edit Guest Profile';
+    document.getElementById('pm-name').value = p.name || '';
+    document.getElementById('pm-phone').value = phone;
+    document.getElementById('pm-phone').disabled = true;
+    document.getElementById('pm-phone-hint').textContent = 'Mobile number is the unique identifier and cannot be changed';
+    document.getElementById('pm-address').value = p.address || '';
+    renderPmDocCurrent(p);
+  } else {
+    document.getElementById('pm-title').textContent = 'Add Guest Profile';
+    document.getElementById('pm-name').value = '';
+    document.getElementById('pm-phone').value = '';
+    document.getElementById('pm-phone').disabled = false;
+    document.getElementById('pm-phone-hint').textContent = 'Acts as the unique guest identifier — cannot be changed once saved';
+    document.getElementById('pm-address').value = '';
+    document.getElementById('pm-doc-current').innerHTML = '';
+  }
+  document.getElementById('profile-modal').classList.add('open');
+}
+
+function renderPmDocCurrent(p) {
+  const wrap = document.getElementById('pm-doc-current');
+  if (p.document) {
+    wrap.innerHTML = `<div class="doc-upload-current">
+      <a href="${p.document}" target="_blank" rel="noopener" download="${esc(p.documentName || 'document')}">📄 View current: ${esc(p.documentName || 'Uploaded document')}</a>
+      <button type="button" class="doc-remove-btn" onclick="removeCurrentDoc()">Remove</button>
+    </div>`;
+  } else if (p.documentName) {
+    wrap.innerHTML = `<div class="doc-upload-current">
+      <span>📄 ${esc(p.documentName)} (name on record only — file was too large to preview)</span>
+      <button type="button" class="doc-remove-btn" onclick="removeCurrentDoc()">Remove</button>
+    </div>`;
+  } else {
+    wrap.innerHTML = '';
+  }
+}
+
+function removeCurrentDoc() {
+  pmDocRemoved = true;
+  pmPendingDoc = null;
+  document.getElementById('pm-document').value = '';
+  document.getElementById('pm-doc-current').innerHTML =
+    `<div class="doc-upload-current"><span style="color:var(--gray-400);">Document will be removed on save</span></div>`;
+}
+
+function handleProfileDocUpload(event) {
+  const file = event.target.files[0];
+  if (!file) { pmPendingDoc = null; return; }
+  pmDocRemoved = false;
+
+  if (file.size > DOC_DATA_URL_MAX_BYTES) {
+    // Too large to store inline (keeps Firestore documents small) — save the filename only
+    pmPendingDoc = { dataUrl: null, name: file.name };
+    document.getElementById('pm-doc-current').innerHTML =
+      `<div class="doc-upload-current"><span>📄 ${esc(file.name)} (too large to preview — name will be saved)</span></div>`;
+    showToast('File is large — only the filename will be saved on this profile', 'error');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    pmPendingDoc = { dataUrl: reader.result, name: file.name };
+    document.getElementById('pm-doc-current').innerHTML =
+      `<div class="doc-upload-current"><span>📄 ${esc(file.name)} (ready to save)</span></div>`;
+  };
+  reader.onerror = () => showToast('Could not read the selected file', 'error');
+  reader.readAsDataURL(file);
+}
+
+function saveGuestProfile() {
+  const name = document.getElementById('pm-name').value.trim();
+  const phoneInput = document.getElementById('pm-phone').value.trim();
+  const address = document.getElementById('pm-address').value.trim();
+  let ok = true;
+
+  if (!name) { document.getElementById('pm-err-name').style.display = 'block'; ok = false; }
+  else { document.getElementById('pm-err-name').style.display = 'none'; }
+
+  const phone = pmEditingPhone || phoneInput;
+  if (!/^\d{10}$/.test(phone)) { document.getElementById('pm-err-phone').style.display = 'block'; ok = false; }
+  else { document.getElementById('pm-err-phone').style.display = 'none'; }
+
+  if (!ok) return;
+
+  if (!pmEditingPhone && guestProfiles[phone]) {
+    // Mobile number is the unique key — if a profile already exists, edit it
+    // instead of silently overwriting/duplicating it.
+    showToast('A profile with this mobile number already exists — updating it instead', 'error');
+  }
+
+  const profile = getGuestProfile(phone);
+  profile.name = name;
+  profile.address = address;
+
+  if (pmDocRemoved) {
+    profile.document = null;
+    profile.documentName = null;
+  } else if (pmPendingDoc) {
+    profile.document = pmPendingDoc.dataUrl;     // null if the file was too large
+    profile.documentName = pmPendingDoc.name;
+  }
+
+  closeModal('profile-modal');
+  renderGuestProfiles();
+  if (window.fbSaveProfile) window.fbSaveProfile(phone, profile);
+  showToast(`Guest profile saved for ${name}`, 'success');
+}
+
 // ===== PRICING SETTINGS =====
 function renderPricingSettings() {
-  // Populate hourly rates (1-6 hrs)
+  // Populate hourly rates (1-9 hrs)
   const hourlyGrid = document.getElementById('pe-hourly-grid');
   hourlyGrid.innerHTML = [1,2,3,4,5,6,7,8,9].map(h => `
     <div class="pricing-edit-card">
@@ -3521,6 +3988,7 @@ function renderPricingSettings() {
   // Populate fixed durations
   document.getElementById('pe-12hours').value = PRICING['12hours'];
   document.getElementById('pe-fullday').value = PRICING.fullday;
+  document.getElementById('pe-night').value = PRICING.night;
   document.getElementById('pe-threshold').value = LOYALTY_THRESHOLD;
   document.getElementById('pe-discount').value = Math.round(LOYALTY_DISCOUNT_PCT * 100);
   
@@ -3549,13 +4017,15 @@ function updatePricingPreview() {
   }
   const halfDay = parseInt(document.getElementById('pe-12hours')?.value) || PRICING['12hours'];
   const fullDay = parseInt(document.getElementById('pe-fullday')?.value) || PRICING.fullday;
+  const nightRate = parseInt(document.getElementById('pe-night')?.value) || PRICING.night;
   previewHtml += `<div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--gray-300);">Half Day: ₹${halfDay} → ₹${Math.round(halfDay * (100 - discountPct) / 100)}</div>`;
   previewHtml += `<div>Full Day: ₹${fullDay} → ₹${Math.round(fullDay * (100 - discountPct) / 100)}</div>`;
+  previewHtml += `<div>Night Stay: ₹${nightRate} → ₹${Math.round(nightRate * (100 - discountPct) / 100)}</div>`;
   previewDiv.innerHTML = previewHtml;
 }
 
 function savePricing() {
-  // Save hourly rates
+  // Save hourly rates (1–9 hrs — fixes the bug where 7/8/9 hr edits were ignored)
   for (let h = 1; h <= 9; h++) {
     const input = document.getElementById(`pe-hourly-${h}`);
     if (input) {
@@ -3573,6 +4043,9 @@ function savePricing() {
   const fullDayVal = parseInt(document.getElementById('pe-fullday').value);
   if (!isNaN(fullDayVal) && fullDayVal > 0) PRICING.fullday = fullDayVal;
   
+  const nightVal = parseInt(document.getElementById('pe-night').value);
+  if (!isNaN(nightVal) && nightVal > 0) PRICING.night = nightVal;
+  
   // Save loyalty settings
   const thresholdVal = parseInt(document.getElementById('pe-threshold').value);
   if (!isNaN(thresholdVal) && thresholdVal > 0) LOYALTY_THRESHOLD = thresholdVal;
@@ -3583,7 +4056,9 @@ function savePricing() {
   pricingUnsaved = false;
   document.getElementById('pricing-unsaved').style.display = 'none';
   
-  // Refresh UI elements that depend on pricing
+  // Refresh UI elements that depend on pricing — fixed-duration cards always,
+  // hourly chips/price only matter while Hourly is the selected duration.
+  refreshDurCardPrices();
   if (cSelectedDur === 'hourly') {
     renderHourChips();
     document.getElementById('dur-hourly-price').textContent = fmtCurrency(getHourlyPrice(cSelectedHours));
@@ -3596,10 +4071,12 @@ function resetPricing() {
   PRICING.hourlyRates = [...DEFAULT_PRICING.hourlyRates];
   PRICING['12hours'] = DEFAULT_PRICING['12hours'];
   PRICING.fullday = DEFAULT_PRICING.fullday;
+  PRICING.night = DEFAULT_PRICING.night;
   LOYALTY_THRESHOLD = DEFAULT_LOYALTY_THRESHOLD;
   LOYALTY_DISCOUNT_PCT = DEFAULT_LOYALTY_DISCOUNT_PCT;
   
   renderPricingSettings();
+  refreshDurCardPrices();
   if (cSelectedDur === 'hourly') {
     renderHourChips();
     document.getElementById('dur-hourly-price').textContent = fmtCurrency(getHourlyPrice(cSelectedHours));
@@ -3613,19 +4090,30 @@ function openExtend(id) {
   const b=bookings.find(x=>x.id===id);
   const r=ROOMS_DEF.find(x=>x.id===b.roomId);
   document.getElementById('extend-guest-info').textContent=`Room ${r.num} — ${b.name}`;
-  document.querySelectorAll('.extend-opt').forEach((el,i)=>{el.classList.toggle('sel',i===0);});
+  document.querySelectorAll('#extend-modal .extend-opt').forEach((el,i)=>{el.classList.toggle('sel',i===0);});
   document.getElementById('extend-modal').classList.add('open');
 }
 
 function selectExtend(el,hrs) {
   extendHours=hrs;
-  document.querySelectorAll('.extend-opt').forEach(e=>e.classList.remove('sel'));
+  document.querySelectorAll('#extend-modal .extend-opt').forEach(e=>e.classList.remove('sel'));
   el.classList.add('sel');
 }
 
+// Extending a booking charges for the extra time at the base (1-hour) hourly
+// rate — this keeps amountPaid (and therefore revenue reporting) accurate.
 function doExtend() {
   const b=bookings.find(x=>x.id===extendBookingId);
-  if(b){b.end+=extendHours*3600000; showToast('Booking extended by '+extendHours+' hour'+(extendHours>1?'s':''),'success');}
+  if(b){
+    const hourlyRate = PRICING.hourlyRates[0]; // base 1-hour rate, used for all extension charges
+    const extraCost = extendHours * hourlyRate;
+    b.end += extendHours*3600000;
+    b.amountPaid = (b.amountPaid || 0) + extraCost;
+    if (b.durType === 'hourly') {
+      b.hours = (b.hours || 0) + extendHours;
+    }
+    showToast(`Booking extended by ${extendHours} hour${extendHours>1?'s':''} — +${fmtCurrency(extraCost)} added to bill`,'success');
+  }
   closeModal('extend-modal');
   refreshCurrentView();
 }
@@ -3653,12 +4141,148 @@ function doCheckout() {
 
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 
+// ===== ADMIN: NEW BOOKING (manual check-in / walk-in guests) =====
+function openNewBookingModal() {
+  nbSelectedDur = 'hourly';
+  nbSelectedHours = 1;
+
+  document.getElementById('nb-phone').value = '';
+  document.getElementById('nb-name').value = '';
+  document.getElementById('nb-guest-banner').innerHTML = '';
+  document.getElementById('nb-err-phone').style.display = 'none';
+  document.getElementById('nb-err-name').style.display = 'none';
+  document.getElementById('nb-err-room').style.display = 'none';
+  document.getElementById('nb-freestay-wrap').style.display = 'none';
+  document.getElementById('nb-freestay').checked = false;
+  document.querySelectorAll('#nb-dur-opts .nb-dur-opt').forEach((el, i) => el.classList.toggle('sel', i === 0));
+  document.getElementById('nb-hours-wrap').style.display = 'block';
+  document.getElementById('nb-hours').value = '1';
+
+  // Only rooms that are currently free can be picked
+  const occupiedIds = bookings.filter(b => b.status === 'Active').map(b => b.roomId);
+  const available = ROOMS_DEF.filter(r => !occupiedIds.includes(r.id));
+  const roomSel = document.getElementById('nb-room');
+  roomSel.innerHTML = available.length === 0
+    ? `<option value="">No rooms available</option>`
+    : available.map(r => `<option value="${r.id}">Room ${r.num} — ${r.floor}</option>`).join('');
+
+  updateNbPricePreview();
+  document.getElementById('new-booking-modal').classList.add('open');
+}
+
+function nbPhoneInput() {
+  const phone = document.getElementById('nb-phone').value.trim();
+  const banner = document.getElementById('nb-guest-banner');
+  const freestayWrap = document.getElementById('nb-freestay-wrap');
+
+  if (!/^\d{10}$/.test(phone)) {
+    banner.innerHTML = '';
+    freestayWrap.style.display = 'none';
+    document.getElementById('nb-freestay').checked = false;
+    updateNbPricePreview();
+    return;
+  }
+
+  const existing = guestProfiles[phone];
+  if (existing && existing.name) {
+    document.getElementById('nb-name').value = existing.name;
+    const stamps = existing.currentStamps || 0;
+    const freeAvail = !!existing.freeStayAvailable;
+    banner.innerHTML = `<div class="field-hint" style="margin:-8px 0 14px;color:var(--blue-dark);">
+      👤 Existing guest — ${existing.checkins || 0} previous visit${existing.checkins !== 1 ? 's' : ''} · ${stamps}/7 stamps${freeAvail ? ' · 🎉 Free stay ready' : ''}
+    </div>`;
+    freestayWrap.style.display = freeAvail ? 'block' : 'none';
+    if (!freeAvail) document.getElementById('nb-freestay').checked = false;
+  } else {
+    banner.innerHTML = `<div class="field-hint" style="margin:-8px 0 14px;">New guest — a profile will be created automatically</div>`;
+    freestayWrap.style.display = 'none';
+    document.getElementById('nb-freestay').checked = false;
+  }
+  updateNbPricePreview();
+}
+
+function selectNbDur(el, val) {
+  nbSelectedDur = val;
+  document.querySelectorAll('#nb-dur-opts .nb-dur-opt').forEach(e => e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('nb-hours-wrap').style.display = (val === 'hourly') ? 'block' : 'none';
+  updateNbPricePreview();
+}
+
+function updateNbPricePreview() {
+  const previewEl = document.getElementById('nb-price-preview');
+  if (!previewEl) return;
+  const phone = document.getElementById('nb-phone').value.trim();
+  const hours = parseInt(document.getElementById('nb-hours').value) || 1;
+  const useFreeStay = document.getElementById('nb-freestay').checked;
+
+  if (useFreeStay) {
+    previewEl.innerHTML = `<div class="co-modal-info-row"><span class="k">Amount payable</span><span class="v" style="color:var(--green);font-weight:700;">FREE (reward applied)</span></div>`;
+    return;
+  }
+
+  const validPhone = /^\d{10}$/.test(phone);
+  const pricing = validPhone
+    ? calculatePrice(nbSelectedDur, phone, hours)
+    : { base: getBasePrice(nbSelectedDur, hours), discountAmt: 0, total: getBasePrice(nbSelectedDur, hours) };
+
+  let html = `<div class="co-modal-info-row"><span class="k">${getDurLabel(nbSelectedDur, hours)}</span><span class="v">${fmtCurrency(pricing.base)}</span></div>`;
+  if (pricing.discountAmt > 0) {
+    html += `<div class="co-modal-info-row"><span class="k">👑 Loyalty discount</span><span class="v" style="color:var(--purple);">−${fmtCurrency(pricing.discountAmt)}</span></div>`;
+  }
+  html += `<div class="co-modal-info-row" style="border-top:1px solid var(--gray-200);margin-top:6px;padding-top:8px;"><span class="k" style="font-weight:600;">Total payable</span><span class="v" style="color:var(--green);font-weight:700;">${fmtCurrency(pricing.total)}</span></div>`;
+  previewEl.innerHTML = html;
+}
+
+function submitNewBooking() {
+  const phone = document.getElementById('nb-phone').value.trim();
+  const name = document.getElementById('nb-name').value.trim();
+  const roomVal = document.getElementById('nb-room').value;
+  const hours = parseInt(document.getElementById('nb-hours').value) || 1;
+  const useFreeStay = document.getElementById('nb-freestay').checked;
+  let ok = true;
+
+  if (!/^\d{10}$/.test(phone)) { document.getElementById('nb-err-phone').style.display = 'block'; ok = false; }
+  else { document.getElementById('nb-err-phone').style.display = 'none'; }
+
+  if (!name) { document.getElementById('nb-err-name').style.display = 'block'; ok = false; }
+  else { document.getElementById('nb-err-name').style.display = 'none'; }
+
+  if (!roomVal) { document.getElementById('nb-err-room').style.display = 'block'; ok = false; }
+  else { document.getElementById('nb-err-room').style.display = 'none'; }
+
+  if (!ok) return;
+
+  const roomId = parseInt(roomVal);
+  // Guard against the room being taken in the brief window the modal was open
+  if (bookings.some(b => b.status === 'Active' && b.roomId === roomId)) {
+    showToast('That room was just taken — please pick another', 'error');
+    openNewBookingModal();
+    return;
+  }
+
+  const { booking, profile, room } = processCheckIn(roomId, name, phone, nbSelectedDur, hours, useFreeStay);
+
+  // This path doesn't go through the patched completeCheckIn wrapper used by
+  // the customer-facing flow, so persist to Firebase explicitly here.
+  if (window.fbSaveBooking) window.fbSaveBooking(booking);
+  if (window.fbSaveProfile) window.fbSaveProfile(phone, profile);
+
+  closeModal('new-booking-modal');
+  refreshCurrentView();
+  const toastMsg = useFreeStay
+    ? `🎉 Free stay booking created for ${name} in Room ${room.num}`
+    : `Booking created for ${name} in Room ${room.num} — ${fmtCurrency(booking.amountPaid)}`;
+  showToast(toastMsg, 'success');
+}
+
 function refreshCurrentView(){
   const active=document.querySelector('.admin-view.active');
   if(!active) return;
   const id=active.id.replace('av-','');
   if(id==='dashboard') renderDashboard();
   else if(id==='bookings') renderBookings();
+  else if(id==='profiles') renderGuestProfiles();
   else if(id==='logs') renderLogs();
   else if(id==='rooms') renderRoomMgmt();
   else if(id==='loyalty') renderLoyaltyAdmin();
@@ -3819,9 +4443,11 @@ async function fbInit() {
       PRICING.hourlyRates = savedSettings.hourlyRates;
       PRICING['12hours'] = savedSettings['12hours'] || PRICING['12hours'];
       PRICING.fullday = savedSettings.fullday || PRICING.fullday;
+      PRICING.night = savedSettings.night || PRICING.night;
       LOYALTY_THRESHOLD = savedSettings.loyaltyThreshold || LOYALTY_THRESHOLD;
       LOYALTY_DISCOUNT_PCT = savedSettings.loyaltyDiscountPct || LOYALTY_DISCOUNT_PCT;
     }
+    refreshDurCardPrices();
 
     // Load guest profiles
     const profiles = await window.fbLoadProfiles();
@@ -3913,7 +4539,7 @@ window.doExtend = function() {
   _origDoExtend();
   const b = bookings.find(x => x.id === extendBookingId);
   if (b && window.fbUpdateBooking) {
-    window.fbUpdateBooking(b.id, { end: b.end });
+    window.fbUpdateBooking(b.id, { end: b.end, amountPaid: b.amountPaid, hours: b.hours });
   }
 };
 
@@ -3946,6 +4572,7 @@ window.savePricing = function() {
       hourlyRates: PRICING.hourlyRates,
       '12hours': PRICING['12hours'],
       fullday: PRICING.fullday,
+      night: PRICING.night,
       loyaltyThreshold: LOYALTY_THRESHOLD,
       loyaltyDiscountPct: LOYALTY_DISCOUNT_PCT,
     });
