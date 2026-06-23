@@ -1593,6 +1593,27 @@ tbody tr:hover td { background: var(--gray-50); }
   margin-top: 6px;
 }
 
+/* ===== PRICE OVERRIDE STYLES ===== */
+.nb-override-box {
+  background: var(--amber-light);
+  border: 1.5px solid #fcd34d;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.nb-override-compare {
+  font-size: 12px;
+  color: var(--amber);
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#nb-override-amount:focus {
+  border-color: var(--amber) !important;
+  box-shadow: 0 0 0 3px rgba(217,119,6,0.15);
+}
+
 /* Responsive */
 @media (max-width: 700px) {
   .admin-sidebar { display: none; }
@@ -2472,6 +2493,32 @@ tbody tr:hover td { background: var(--gray-50); }
         🎉 Apply free stay reward (₹0 for this booking)
       </label>
     </div>
+    <!-- Price Override -->
+    <div id="nb-override-wrap" style="margin-bottom:14px;">
+      <label class="nb-override-toggle" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--gray-700);cursor:pointer;user-select:none;">
+        <input type="checkbox" id="nb-override-chk" onchange="toggleNbOverride()" style="width:16px;height:16px;accent-color:var(--amber);">
+        <span>⚙️ Override auto-price (set custom amount)</span>
+      </label>
+      <div id="nb-override-input-wrap" style="display:none;margin-top:10px;animation:fadeUp 0.2s ease;">
+        <div class="nb-override-box">
+          <div class="nb-override-compare" id="nb-override-compare"></div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:20px;font-weight:700;color:var(--gray-600);">₹</span>
+            <input
+              type="number"
+              id="nb-override-amount"
+              placeholder="Enter custom amount"
+              min="1"
+              step="1"
+              oninput="updateNbPricePreview()"
+              style="flex:1;padding:10px 12px;font-size:16px;font-weight:700;font-family:var(--mono);border:2px solid var(--amber);border-radius:var(--radius);outline:none;color:var(--gray-900);background:white;"
+            >
+          </div>
+          <div class="field-error" id="nb-err-override" style="display:none;margin-top:4px;">Please enter a valid amount (min ₹1)</div>
+        </div>
+      </div>
+    </div>
+
     <div class="co-modal-info" id="nb-price-preview" style="margin-bottom:16px;"></div>
 
     <div class="modal-actions">
@@ -4154,6 +4201,11 @@ function openNewBookingModal() {
   document.getElementById('nb-err-room').style.display = 'none';
   document.getElementById('nb-freestay-wrap').style.display = 'none';
   document.getElementById('nb-freestay').checked = false;
+  // Reset price override
+  document.getElementById('nb-override-chk').checked = false;
+  document.getElementById('nb-override-input-wrap').style.display = 'none';
+  document.getElementById('nb-override-amount').value = '';
+  document.getElementById('nb-err-override').style.display = 'none';
   document.querySelectorAll('#nb-dur-opts .nb-dur-opt').forEach((el, i) => el.classList.toggle('sel', i === 0));
   document.getElementById('nb-hours-wrap').style.display = 'block';
   document.getElementById('nb-hours').value = '1';
@@ -4209,23 +4261,55 @@ function selectNbDur(el, val) {
   updateNbPricePreview();
 }
 
+function toggleNbOverride() {
+  const isOn = document.getElementById('nb-override-chk').checked;
+  document.getElementById('nb-override-input-wrap').style.display = isOn ? 'block' : 'none';
+  if (!isOn) {
+    document.getElementById('nb-override-amount').value = '';
+    document.getElementById('nb-err-override').style.display = 'none';
+  }
+  updateNbPricePreview();
+}
+
 function updateNbPricePreview() {
   const previewEl = document.getElementById('nb-price-preview');
   if (!previewEl) return;
   const phone = document.getElementById('nb-phone').value.trim();
   const hours = parseInt(document.getElementById('nb-hours').value) || 1;
   const useFreeStay = document.getElementById('nb-freestay').checked;
+  const isOverride = document.getElementById('nb-override-chk').checked;
 
   if (useFreeStay) {
     previewEl.innerHTML = `<div class="co-modal-info-row"><span class="k">Amount payable</span><span class="v" style="color:var(--green);font-weight:700;">FREE (reward applied)</span></div>`;
     return;
   }
 
+  // Compute auto price (always needed for comparison display)
   const validPhone = /^\d{10}$/.test(phone);
   const pricing = validPhone
     ? calculatePrice(nbSelectedDur, phone, hours)
     : { base: getBasePrice(nbSelectedDur, hours), discountAmt: 0, total: getBasePrice(nbSelectedDur, hours) };
 
+  if (isOverride) {
+    // Update the comparison hint inside the override box
+    const compareEl = document.getElementById('nb-override-compare');
+    if (compareEl) {
+      compareEl.innerHTML = `⚙️ Auto-price: ${fmtCurrency(pricing.base)}${pricing.discountAmt > 0 ? ` <span style="color:var(--purple);">− ${fmtCurrency(pricing.discountAmt)} loyalty</span> = ${fmtCurrency(pricing.total)}` : ''} — loyalty discount <strong>not applied</strong> in override mode`;
+    }
+
+    const customAmt = parseFloat(document.getElementById('nb-override-amount').value);
+    if (!isNaN(customAmt) && customAmt >= 1) {
+      previewEl.innerHTML = `
+        <div class="co-modal-info-row"><span class="k">${getDurLabel(nbSelectedDur, hours)}</span><span class="v">${fmtCurrency(pricing.base)}</span></div>
+        <div class="co-modal-info-row"><span class="k">⚙️ Staff override</span><span class="v" style="color:var(--amber);font-weight:600;">custom price applied</span></div>
+        <div class="co-modal-info-row" style="border-top:1px solid var(--gray-200);margin-top:6px;padding-top:8px;"><span class="k" style="font-weight:600;">Total payable</span><span class="v" style="color:var(--amber);font-weight:700;">${fmtCurrency(customAmt)}</span></div>`;
+    } else {
+      previewEl.innerHTML = `<div class="co-modal-info-row"><span class="k" style="color:var(--amber);">⚙️ Override active</span><span class="v" style="color:var(--gray-400);">Enter custom amount above</span></div>`;
+    }
+    return;
+  }
+
+  // Normal auto-price display
   let html = `<div class="co-modal-info-row"><span class="k">${getDurLabel(nbSelectedDur, hours)}</span><span class="v">${fmtCurrency(pricing.base)}</span></div>`;
   if (pricing.discountAmt > 0) {
     html += `<div class="co-modal-info-row"><span class="k">👑 Loyalty discount</span><span class="v" style="color:var(--purple);">−${fmtCurrency(pricing.discountAmt)}</span></div>`;
@@ -4240,6 +4324,7 @@ function submitNewBooking() {
   const roomVal = document.getElementById('nb-room').value;
   const hours = parseInt(document.getElementById('nb-hours').value) || 1;
   const useFreeStay = document.getElementById('nb-freestay').checked;
+  const isOverride = document.getElementById('nb-override-chk').checked;
   let ok = true;
 
   if (!/^\d{10}$/.test(phone)) { document.getElementById('nb-err-phone').style.display = 'block'; ok = false; }
@@ -4250,6 +4335,18 @@ function submitNewBooking() {
 
   if (!roomVal) { document.getElementById('nb-err-room').style.display = 'block'; ok = false; }
   else { document.getElementById('nb-err-room').style.display = 'none'; }
+
+  // Validate override amount when active (and not a free stay)
+  let overrideAmount = null;
+  if (isOverride && !useFreeStay) {
+    overrideAmount = parseFloat(document.getElementById('nb-override-amount').value);
+    if (isNaN(overrideAmount) || overrideAmount < 1) {
+      document.getElementById('nb-err-override').style.display = 'block';
+      ok = false;
+    } else {
+      document.getElementById('nb-err-override').style.display = 'none';
+    }
+  }
 
   if (!ok) return;
 
@@ -4263,6 +4360,12 @@ function submitNewBooking() {
 
   const { booking, profile, room } = processCheckIn(roomId, name, phone, nbSelectedDur, hours, useFreeStay);
 
+  // Apply the staff override price (overrides whatever processCheckIn calculated)
+  if (isOverride && !useFreeStay && overrideAmount !== null) {
+    booking.amountPaid = Math.round(overrideAmount);
+    booking.priceOverride = true; // flag so reports can distinguish manual prices
+  }
+
   // This path doesn't go through the patched completeCheckIn wrapper used by
   // the customer-facing flow, so persist to Firebase explicitly here.
   if (window.fbSaveBooking) window.fbSaveBooking(booking);
@@ -4272,7 +4375,9 @@ function submitNewBooking() {
   refreshCurrentView();
   const toastMsg = useFreeStay
     ? `🎉 Free stay booking created for ${name} in Room ${room.num}`
-    : `Booking created for ${name} in Room ${room.num} — ${fmtCurrency(booking.amountPaid)}`;
+    : isOverride
+      ? `Booking created for ${name} in Room ${room.num} — ${fmtCurrency(booking.amountPaid)} (override)`
+      : `Booking created for ${name} in Room ${room.num} — ${fmtCurrency(booking.amountPaid)}`;
   showToast(toastMsg, 'success');
 }
 
